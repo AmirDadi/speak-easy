@@ -1,0 +1,71 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #f7f4ef;
+  --card: #ffffff;
+  --ink: #1c1c1e;
+  --muted: #6b6b70;
+  --line: #e7e2da;
+  --brand: #1a8fd1;
+  --good: #1f9d55;
+  --warn: #d98a00;
+  --bad: #d64545;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #121214;
+    --card: #1d1d20;
+    --ink: #f2f2f4;
+    --muted: #a0a0a8;
+    --line: #2e2e33;
+    --brand: #3ba7e6;
+    --good: #3cc77a;
+    --warn: #f0a72a;
+    --bad: #ef6b6b;
+    color-scheme: dark;
+  }
+}
+
+html,
+body {
+  background: var(--bg);
+  color: var(--ink);
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  padding-bottom: calc(76px + env(safe-area-inset-bottom));
+}
+
+.card {
+  @apply rounded-3xl bg-card p-5 shadow-[0_1px_3px_rgba(0,0,0,0.06),0_8px_24px_rgba(0,0,0,0.04)];
+}
+
+.btn {
+  @apply inline-flex min-h-[44px] items-center justify-center gap-2 rounded-2xl px-5 py-3 text-[15px] font-semibold transition active:scale-[0.98] disabled:opacity-50;
+}
+.btn-primary {
+  @apply btn bg-brand text-white;
+}
+.btn-secondary {
+  @apply btn border border-line bg-card text-ink;
+}
+.btn-ghost {
+  @apply btn text-brand;
+}
+
+.input {
+  @apply w-full rounded-2xl border border-line bg-card px-4 py-3 text-[16px] text-ink outline-none focus:border-brand;
+}
+
+.chip {
+  @apply inline-flex items-center rounded-full border border-line px-3 py-1 text-sm;
+}
+
+.label {
+  @apply text-xs font-semibold uppercase tracking-wide text-muted;
+}
