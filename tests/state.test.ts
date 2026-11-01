@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { addPhrases, buildLearnerContext, createInitialState, getDueCards, isSpeakingDue, mergeWeakAreas } from '@/lib/state';
+import { addPhrases, buildLearnerContext, createInitialState, getDueCards, getNextAudience, getNextExplainPart, isExplainDue, isSpeakingDue, mergeWeakAreas } from '@/lib/state';
 
 const TODAY = '2026-10-22';
 const p = (phrase: string) => ({ phrase, meaning: 'm', example: 'e', register: 'casual' });
@@ -36,5 +36,38 @@ describe('state helpers', () => {
     const ctx = buildLearnerContext(s);
     expect(ctx.knownPhrases).toEqual(['no worries']);
     expect(ctx.learningPhrases).toEqual(['low-key']);
+  });
+});
+
+describe('explain helpers', () => {
+  const withSubject = (entries: { part: string; date: string }[]) => ({
+    ...createInitialState(),
+    explain: {
+      subject: { name: 'AIR', description: '', parts: ['Overview', 'How it works', 'Pricing'] },
+      entries: entries as never[],
+    },
+  });
+
+  it('is due every other day', () => {
+    expect(isExplainDue(withSubject([]), TODAY)).toBe(true);
+    expect(isExplainDue(withSubject([{ part: 'Overview', date: '2026-10-21' }]), TODAY)).toBe(false);
+    expect(isExplainDue(withSubject([{ part: 'Overview', date: '2026-10-20' }]), TODAY)).toBe(true);
+  });
+
+  it('picks never-explained parts first, then the least recent', () => {
+    expect(getNextExplainPart(withSubject([]))).toBe('Overview');
+    expect(getNextExplainPart(withSubject([{ part: 'Overview', date: 'x' }]))).toBe('How it works');
+    const all = withSubject([
+      { part: 'How it works', date: 'a' },
+      { part: 'Overview', date: 'b' },
+      { part: 'Pricing', date: 'c' },
+    ]);
+    expect(getNextExplainPart(all)).toBe('How it works');
+  });
+
+  it('rotates audiences', () => {
+    const aud = ['a', 'b'] as const;
+    expect(getNextAudience(withSubject([]), aud)).toBe('a');
+    expect(getNextAudience(withSubject([{ part: 'x', date: 'y' }]), aud)).toBe('b');
   });
 });

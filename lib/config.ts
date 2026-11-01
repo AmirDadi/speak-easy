@@ -17,6 +17,10 @@ export const LEARNING_CONFIG = {
   /** Speaking session target length in seconds. */
   SPEAKING_TARGET_SEC: 150,
   SPEAKING_PREP_SEC: 60,
+  /** "Explain AIR" sessions: every other day, ~5 minutes. */
+  EXPLAIN_INTERVAL_DAYS: 2,
+  EXPLAIN_TARGET_SEC: 300,
+  EXPLAIN_PREP_SEC: 30,
   /** Shadowing: a line counts as "nailed" at or above this word-match ratio. */
   SHADOW_PASS_RATIO: 0.85,
   /** Grade (0-5) at or above which a vocab card counts as a successful recall. */

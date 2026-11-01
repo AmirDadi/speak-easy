@@ -13,6 +13,7 @@ const OUTPUT_SCHEMAS = {
   RoleplayTurnSchema: S.RoleplayTurnSchema,
   RoleplayFeedbackSchema: S.RoleplayFeedbackSchema,
   PlacementSchema: S.PlacementSchema,
+  ExplainReportSchema: S.ExplainReportSchema,
   ImportSchema: S.ImportSchema,
 };
 

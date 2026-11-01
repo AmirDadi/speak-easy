@@ -2,7 +2,7 @@
  * The app's entire persisted state (stored on-device) and pure helpers over
  * it. No `window` or localStorage here — see lib/storage.ts for that.
  */
-import type { Phrase, RoleplayFeedback, Shadowing, SpeakingReport, SpeakingTopic, LearnerContext } from './schemas';
+import type { ExplainReport, Phrase, RoleplayFeedback, Shadowing, SpeakingReport, SpeakingTopic, LearnerContext } from './schemas';
 import { newSrsState, isDue, isMastered, type SrsState } from './srs';
 import { daysBetween } from './dates';
 import { LEARNING_CONFIG } from './config';
@@ -41,6 +41,21 @@ export interface SocialEntry {
   feedback: RoleplayFeedback;
 }
 
+export interface ExplainEntry {
+  date: string;
+  part: string;
+  audience: string;
+  transcript: string;
+  durationSec: number;
+  report: ExplainReport;
+}
+
+export interface ExplainSubject {
+  name: string;
+  description: string;
+  parts: string[];
+}
+
 export interface AppState {
   version: 1;
   profile: {
@@ -58,6 +73,7 @@ export interface AppState {
   shadowing: ShadowingDay[];
   speaking: { pendingTopic: { date: string; topic: SpeakingTopic } | null; entries: SpeakingEntry[] };
   social: SocialEntry[];
+  explain: { subject: ExplainSubject | null; entries: ExplainEntry[] };
   completedLessons: string[];
   activity: string[];
 }
@@ -71,6 +87,7 @@ export function createInitialState(): AppState {
     shadowing: [],
     speaking: { pendingTopic: null, entries: [] },
     social: [],
+    explain: { subject: null, entries: [] },
     completedLessons: [],
     activity: [],
   };
@@ -127,6 +144,30 @@ export function getLastSpeaking(state: AppState): SpeakingEntry | undefined {
 export function isSpeakingDue(state: AppState, today: string): boolean {
   const last = getLastSpeaking(state);
   return !last || daysBetween(last.date, today) >= LEARNING_CONFIG.SPEAKING_INTERVAL_DAYS;
+}
+
+export function getLastExplain(state: AppState): ExplainEntry | undefined {
+  return state.explain.entries[state.explain.entries.length - 1];
+}
+
+export function isExplainDue(state: AppState, today: string): boolean {
+  const last = getLastExplain(state);
+  return !last || daysBetween(last.date, today) >= LEARNING_CONFIG.EXPLAIN_INTERVAL_DAYS;
+}
+
+/** The part explained least recently (never-explained parts first, in list order). */
+export function getNextExplainPart(state: AppState): string | undefined {
+  const parts = state.explain.subject?.parts ?? [];
+  const lastUsed = (part: string) => {
+    const idx = state.explain.entries.map((e) => e.part).lastIndexOf(part);
+    return idx;
+  };
+  return [...parts].sort((a, b) => lastUsed(a) - lastUsed(b))[0];
+}
+
+/** Rotate audiences so the learner practices adjusting their words to the listener. */
+export function getNextAudience(state: AppState, audiences: readonly string[]): string {
+  return audiences[state.explain.entries.length % audiences.length];
 }
 
 /**

@@ -6,7 +6,7 @@ import { Spinner } from '@/components/ui';
 import { LEARNING_CONFIG } from '@/lib/config';
 import { computeStreak, daysBetween, getLocalDate } from '@/lib/dates';
 import { MOVES } from '@/lib/social-content';
-import { getDueCards, getLastSpeaking, getTodayShadowing, isSpeakingDue } from '@/lib/state';
+import { getDueCards, getLastExplain, getLastSpeaking, getNextExplainPart, getTodayShadowing, isExplainDue, isSpeakingDue } from '@/lib/state';
 import { isMastered } from '@/lib/srs';
 import { useAppState } from '@/lib/storage';
 
@@ -28,6 +28,10 @@ export default function TodayPage() {
   const daysLeft = lastSpeaking
     ? LEARNING_CONFIG.SPEAKING_INTERVAL_DAYS - daysBetween(lastSpeaking.date, today)
     : 0;
+  const explainSubject = state.explain.subject;
+  const explainDue = isExplainDue(state, today);
+  const lastExplain = getLastExplain(state);
+  const explainDaysLeft = lastExplain ? LEARNING_CONFIG.EXPLAIN_INTERVAL_DAYS - daysBetween(lastExplain.date, today) : 0;
   const nextMove = MOVES.find((m) => !state.completedLessons.includes(m.id)) ?? MOVES[0];
   const streak = computeStreak(state.activity, today);
   const cards = Object.values(state.vocab);
@@ -76,6 +80,20 @@ export default function TodayPage() {
           detail={speakingDue ? 'Due now: 3 minutes, then a full report' : `Next session in ${daysLeft} day${daysLeft === 1 ? '' : 's'}`}
           done={!speakingDue}
           highlight={speakingDue}
+        />
+        <TaskCard
+          href="/explain"
+          icon="🧠"
+          title={`Explain ${explainSubject?.name ?? 'AIR'}`}
+          detail={
+            !explainSubject
+              ? 'Set it up: what it is and its parts'
+              : explainDue
+                ? `Today: ${getNextExplainPart(state) ?? ''} (~5 min)`
+                : `Next session ${explainDaysLeft <= 1 ? 'tomorrow' : `in ${explainDaysLeft} days`}`
+          }
+          done={!!explainSubject && !explainDue}
+          highlight={!!explainSubject && explainDue}
         />
         <TaskCard
           href={`/social/${nextMove.id}`}

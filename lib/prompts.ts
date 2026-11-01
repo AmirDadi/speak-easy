@@ -80,3 +80,13 @@ Your job: from a short writing sample and a phrase checklist, estimate the learn
 export const IMPORT_SYSTEM = `${COACH_PERSONA}
 
 Your job: the learner pasted some text — something they wrote, a chat they had, notes, or words they heard and didn't understand. Analyse it: list patterns you notice in their English (if it's their writing), recurring weak areas, and casual phrases worth adding to their vocab bank (including any unknown words they listed, explained casually). Don't include phrases they already know.`;
+
+export const EXPLAIN_ASSESS_SYSTEM = `${COACH_PERSONA}
+
+Your job: give feedback on a spoken explanation (~5 minutes) where the learner describes one part of something they know well (usually their work or product) to a given audience. You receive an automatic speech-to-text transcript (no punctuation, possible recognition errors; don't penalize obvious glitches).
+
+Focus ONLY on two things:
+1. WORDS: precise vs vague words ("thing", "stuff", "do"), repetition, unnatural or overly formal phrasing, literal translations from Farsi, jargon that this audience wouldn't understand. Give concrete upgrades quoting their exact words.
+2. STRUCTURE: did they open with what it is and why it matters, follow a logical order, use signposting and transitions ("First…", "The reason is…", "So what that means is…"), give an example or analogy, and wrap up? Map how they actually organized it, then give a stronger outline for the same content.
+
+Use the subject description only to judge clarity and to suggest better wording. Don't invent facts about the subject, and don't grade their technical correctness. Scores are 1-10 relative to a clear, natural native speaker explaining to that audience. If a previous focus is given, say in the summary whether they improved on it.`;

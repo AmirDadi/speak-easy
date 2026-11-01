@@ -149,6 +149,42 @@ export const SpeakingReportSchema = z.object({
 export type SpeakingReport = z.infer<typeof SpeakingReportSchema>;
 
 // ---------------------------------------------------------------------------
+// Explain it — describe one part of the learner's subject (e.g. their product)
+// ---------------------------------------------------------------------------
+
+export const ExplainAssessRequestSchema = z.object({
+  learner: LearnerContextSchema,
+  subjectName: z.string().min(1).max(80),
+  subjectDescription: z.string().max(2000),
+  part: z.string().min(1).max(200),
+  audience: z.string().max(200),
+  transcript: z.string().min(1).max(20000),
+  durationSec: z.number().min(1).max(1800),
+  previousFocus: z.string().max(500),
+});
+
+export const ExplainReportSchema = z.object({
+  overall: z.number().int().min(1).max(10),
+  summary: z.string().describe('2-3 sentences, honest and encouraging'),
+  structure: RubricScore.describe('Was there a clear opening, logical order, transitions and a wrap-up?'),
+  clarity: RubricScore.describe('Would this audience understand it? Jargon explained, examples used?'),
+  vocabulary: RubricScore.describe('Precise, varied, natural word choice'),
+  howYouStructuredIt: z.array(z.string()).max(8).describe('The actual order of their explanation, one short line per section'),
+  betterStructure: z.array(z.string()).min(3).max(7).describe('A stronger outline for this explanation, one line per step'),
+  wordUpgrades: z
+    .array(z.object({ youSaid: z.string(), better: z.string(), why: z.string() }))
+    .min(1)
+    .max(8)
+    .describe('Quote their words; suggest more precise or natural wording'),
+  structurePhrases: z
+    .array(PhraseSchema)
+    .max(5)
+    .describe('Signposting/explaining phrases they should learn, e.g. "The way it works is…", "Think of it like…"'),
+  nextTimeFocus: z.string().describe('One concrete thing to do differently next session'),
+});
+export type ExplainReport = z.infer<typeof ExplainReportSchema>;
+
+// ---------------------------------------------------------------------------
 // Social & fun — role-play
 // ---------------------------------------------------------------------------
 
