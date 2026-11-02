@@ -27,7 +27,15 @@ npm run dev                  # http://localhost:3000
 2. Open the URL in **Safari (iPhone)** or **Chrome (Android)** → Share → **Add to Home Screen**.
 3. In the app: Profile → Passcode → enter the same `APP_PASSCODE` (stops strangers from using your API key).
 
-Speech recognition and text-to-speech use the browser's built-in engines (free). Chrome and Safari both support them. For the most natural voices on iPhone: Settings → Accessibility → Spoken Content → Voices → English (US) → download an "Enhanced" or "Premium" voice.
+### Natural voices (Google Cloud Text-to-Speech)
+Dialogues, role-plays and lesson examples are read by Google's **Chirp 3 HD** voices, with a different voice per character. Each line is generated once and saved on your phone, so replays and slow-downs are free.
+
+1. In [Google Cloud Console](https://console.cloud.google.com/), create a project and set up billing (Google has a monthly free quota; see [pricing](https://cloud.google.com/text-to-speech/pricing)).
+2. Enable the **Cloud Text-to-Speech API**: [direct link](https://console.cloud.google.com/apis/library/texttospeech.googleapis.com).
+3. **APIs & Services → Credentials → Create credentials → API key**. Restrict it to *Cloud Text-to-Speech API*.
+4. In Vercel add `GOOGLE_TTS_API_KEY` with that key and redeploy.
+
+Without the key, the app falls back to the phone's built-in voice (novelty voices filtered out). Speech *recognition* always uses the browser's built-in engine (Chrome or Safari).
 
 ## Your data
 All progress is stored **on your device** (localStorage). Nothing is saved on a server. Use **Profile → Download backup** regularly; restore it on a new phone with **Restore**.

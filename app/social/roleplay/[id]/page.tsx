@@ -1,12 +1,13 @@
 'use client';
 import { useParams, useSearchParams } from 'next/navigation';
-import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ErrorBox, MicButton, PageHeader, PhraseCard, ScorePill, Spinner } from '@/components/ui';
 import { callApi } from '@/lib/api-client';
 import { getLocalDate } from '@/lib/dates';
 import type { RoleplayFeedback, RoleplayMessage, RoleplayStart, RoleplayTurn } from '@/lib/schemas';
 import { getMove, getScenario } from '@/lib/social-content';
-import { speak, stopSpeaking, useSpeechRecognition, useUsVoices } from '@/lib/speech';
+import { useSpeechRecognition } from '@/lib/speech';
+import { castVoices, say, stopAudio } from '@/lib/tts';
 import { addPhrases, buildLearnerContext, markActive } from '@/lib/state';
 import { useAppState } from '@/lib/storage';
 
@@ -32,7 +33,6 @@ function Roleplay() {
   const move = moveId ? getMove(moveId) : undefined;
   const skillFocus = move ? `${move.title}: ${move.tagline}` : scenario?.skillFocus ?? '';
   const [state, update] = useAppState();
-  const voices = useUsVoices();
   const [setup, setSetup] = useState<RoleplayStart | null>(null);
   const [chat, setChat] = useState<ChatItem[]>([]);
   const [input, setInput] = useState('');
@@ -44,20 +44,17 @@ function Roleplay() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const rec = useSpeechRecognition();
 
-  const voiceFor = useCallback(
-    (speaker: string) => {
-      if (!setup || !voices.length) return null;
-      const i = setup.characters.findIndex((c) => c.name === speaker);
-      return voices[Math.max(0, i) % voices.length];
-    },
-    [setup, voices],
+  const cast = useMemo(() => castVoices((setup?.characters ?? []).map((c) => ({ name: c.name, voice: c.voice }))), [setup]);
+  const play = useCallback(
+    (text: string, speaker: string) => say(text, { voice: cast.cloud(speaker), fallbackVoice: cast.local(speaker) }),
+    [cast],
   );
 
   const sayAll = useCallback(
     async (msgs: RoleplayMessage[]) => {
-      for (const m of msgs) await speak(m.text, { voice: voiceFor(m.speaker) });
+      for (const m of msgs) await play(m.text, m.speaker);
     },
-    [voiceFor],
+    [play],
   );
 
   const start = useCallback(async () => {
@@ -87,7 +84,7 @@ function Roleplay() {
     }
   }, [start]);
 
-  useEffect(() => () => stopSpeaking(), []);
+  useEffect(() => () => stopAudio(), []);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -95,7 +92,7 @@ function Roleplay() {
 
   async function send(text: string) {
     if (!setup || !text.trim()) return;
-    stopSpeaking();
+    stopAudio();
     const mine: ChatItem = { speaker: 'You', text: text.trim() };
     const history = [...chat, mine];
     setChat(history);
@@ -121,7 +118,7 @@ function Roleplay() {
 
   async function finish() {
     if (!setup) return;
-    stopSpeaking();
+    stopAudio();
     setBusy(true);
     setError(null);
     try {
@@ -185,7 +182,7 @@ function Roleplay() {
                 <div className={`flex ${m.speaker === 'You' ? 'justify-end' : ''}`}>
                   <button
                     className={`max-w-[85%] rounded-2xl px-4 py-2 text-left ${m.speaker === 'You' ? 'bg-brand text-white' : 'bg-card shadow-sm'}`}
-                    onClick={() => m.speaker !== 'You' && speak(m.text, { voice: voiceFor(m.speaker) })}
+                    onClick={() => m.speaker !== 'You' && play(m.text, m.speaker)}
                   >
                     {m.speaker !== 'You' && <p className="text-xs font-bold text-brand">{m.speaker}</p>}
                     <p className="text-[16px]">{m.text}</p>
@@ -227,7 +224,7 @@ function Roleplay() {
                     listening={rec.listening}
                     disabled={busy}
                     onStart={() => {
-                      stopSpeaking();
+                      stopAudio();
                       rec.start({ continuous: true });
                     }}
                     onStop={async () => {

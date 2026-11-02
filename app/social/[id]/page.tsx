@@ -4,7 +4,7 @@ import { useParams } from 'next/navigation';
 import { PageHeader } from '@/components/ui';
 import { getLocalDate } from '@/lib/dates';
 import { getMove, getScenario } from '@/lib/social-content';
-import { speak } from '@/lib/speech';
+import { castVoices, say } from '@/lib/tts';
 import { addPhrases, markActive } from '@/lib/state';
 import { useAppState } from '@/lib/storage';
 
@@ -12,6 +12,10 @@ export default function MovePage() {
   const { id } = useParams<{ id: string }>();
   const move = getMove(id);
   const [state, update] = useAppState();
+  // "You" lines get a different voice from the other person in the example.
+  const cast = castVoices([{ name: 'You', voice: 'male' }, { name: 'other', voice: 'female' }]);
+  const play = (text: string, speaker: string) =>
+    say(text, { voice: cast.cloud(speaker === 'You' ? 'You' : 'other'), fallbackVoice: cast.local(speaker), rate: 0.95 });
 
   if (!move) {
     return <PageHeader title="Not found" back="/social" />;
@@ -50,7 +54,7 @@ export default function MovePage() {
       <p className="label mb-2">Phrases to steal</p>
       <div className="card mb-4 divide-y divide-line !p-0">
         {move.phrases.map((p) => (
-          <button key={p.phrase} className="flex w-full items-center gap-3 px-5 py-3 text-left" onClick={() => speak(p.phrase, { rate: 0.95 })}>
+          <button key={p.phrase} className="flex w-full items-center gap-3 px-5 py-3 text-left" onClick={() => play(p.phrase, 'other')}>
             <span className="text-brand">▶</span>
             <span className="flex-1">
               <span className="block font-semibold">{p.phrase}</span>
@@ -71,7 +75,7 @@ export default function MovePage() {
           </div>
         ))}
         <button className="mt-2 text-sm font-medium text-brand" onClick={async () => {
-          for (const l of move.example) await speak(l.text, { rate: 0.95 });
+          for (const l of move.example) await play(l.text, l.speaker);
         }}>
           ▶ Listen
         </button>

@@ -9,10 +9,16 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 // Text-to-speech
 // ---------------------------------------------------------------------------
 
+// Apple ships joke/sound-effect voices tagged en-US; never use them.
+const NOVELTY_VOICES =
+  /albert|bad news|bahh|bells|boing|bubbles|cellos|good news|jester|organ|superstar|trinoids|whisper|wobble|zarvox|deranged|hysterical|pipe organ|junior|ralph|fred|kathy|princess|grandma|grandpa|rocko|shelley|eddy|flo|reed|sandy/i;
+
 /** en-US voices, best-sounding first ("Natural"/"Enhanced"/Google voices beat the robotic defaults). */
 export function getUsVoices(): SpeechSynthesisVoice[] {
   if (typeof window === 'undefined' || !window.speechSynthesis) return [];
-  const voices = window.speechSynthesis.getVoices().filter((v) => v.lang.replace('_', '-').startsWith('en-US'));
+  const voices = window.speechSynthesis
+    .getVoices()
+    .filter((v) => v.lang.replace('_', '-').startsWith('en-US') && !NOVELTY_VOICES.test(v.name));
   const rank = (v: SpeechSynthesisVoice) =>
     /natural|neural|enhanced|premium/i.test(v.name) ? 0 : /google|samantha|aria|jenny|guy|alex/i.test(v.name) ? 1 : 2;
   return voices.sort((a, b) => rank(a) - rank(b));

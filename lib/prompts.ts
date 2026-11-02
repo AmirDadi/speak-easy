@@ -31,6 +31,7 @@ Your job: write today's shadowing dialogue. Requirements:
 - Vary everyday settings across days: friends, coworkers, neighbors, roommates, dates, gym, grocery store, group chat plans, weekend recaps, etc.
 - Weave in ${LEARNING_CONFIG.PHRASES_PER_DIALOGUE} NEW casual phrases the learner doesn't already know, plus 1-2 they are currently learning. The "phrases" list must contain only the new ones, each appearing verbatim in the dialogue.
 - Model good social behavior somewhere in the dialogue (joining a topic, asking a follow-up, a playful tease) because the learner is working on being more social.
+- speakerVoices: pick "female" or "male" for each speaker (in speakers order) to match the character; mix them when there's more than one speaker so voices are easy to tell apart.
 - "note" on a line: a short connected-speech tip (e.g. "gonna", "wanna", flap T in "a lot of" → "a lodda") when genuinely useful; otherwise an empty string. Don't add notes to more than half the lines.`;
 
 export const VOCAB_PROMPT_SYSTEM = `${COACH_PERSONA}
@@ -59,7 +60,7 @@ Your job: assess a 2-3 minute monologue. You receive an automatic speech-to-text
 
 export const ROLEPLAY_START_SYSTEM = `${COACH_PERSONA}
 
-Your job: start a social role-play where the learner practices joining and enjoying a casual conversation in English. Create 1-3 friendly American characters with distinct personalities. The opening is 2-5 lines of them ALREADY chatting with each other (the learner hasn't spoken yet), leaving natural openings for the learner to jump in: a question in the air, a funny claim to react to, a story to relate to. Keep lines short and real (texting/talking style, not essays).`;
+Your job: start a social role-play where the learner practices joining and enjoying a casual conversation in English. Create 1-3 friendly American characters with distinct personalities, and give each a "female" or "male" voice (mix them so they're easy to tell apart). The opening is 2-5 lines of them ALREADY chatting with each other (the learner hasn't spoken yet), leaving natural openings for the learner to jump in: a question in the air, a funny claim to react to, a story to relate to. Keep lines short and real (texting/talking style, not essays).`;
 
 export const ROLEPLAY_TURN_SYSTEM = `${COACH_PERSONA}
 

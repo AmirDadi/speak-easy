@@ -6,7 +6,8 @@ import { compareSpeech, type CompareResult } from '@/lib/compare';
 import { LEARNING_CONFIG } from '@/lib/config';
 import { getLocalDate } from '@/lib/dates';
 import type { Shadowing } from '@/lib/schemas';
-import { speak, stopSpeaking, useSpeechRecognition, useUsVoices } from '@/lib/speech';
+import { useSpeechRecognition } from '@/lib/speech';
+import { castVoices, prefetch, say, stopAudio } from '@/lib/tts';
 import { addPhrases, buildLearnerContext, getTodayShadowing, markActive } from '@/lib/state';
 import { useAppState } from '@/lib/storage';
 
@@ -69,26 +70,34 @@ function ShadowingSession() {
   const today = getLocalDate();
   const day = getTodayShadowing(state, today)!;
   const d = day.dialogue;
-  const voices = useUsVoices();
   const [mode, setMode] = useState<Mode>('listen');
   const [rate, setRate] = useState<number>(LEARNING_CONFIG.TTS_RATES[1]);
   const [hideText, setHideText] = useState(false);
   const [playingIdx, setPlayingIdx] = useState<number | null>(null);
   const stopAll = useRef(false);
 
-  // Give each speaker a different voice when the device has more than one.
-  const voiceFor = useMemo(() => {
-    const map = new Map<string, SpeechSynthesisVoice | null>();
-    d.speakers.forEach((sp, i) => map.set(sp, voices.length ? voices[i % voices.length] : null));
-    return (speaker: string) => map.get(speaker) ?? voices[0] ?? null;
-  }, [d.speakers, voices]);
+  // Each speaker gets a distinct natural voice (older dialogues without
+  // speakerVoices just alternate female/male).
+  const cast = useMemo(
+    () => castVoices(d.speakers.map((name, i) => ({ name, voice: d.speakerVoices?.[i] }))),
+    [d.speakers, d.speakerVoices],
+  );
+  const play = useCallback(
+    (text: string, speaker: string) => say(text, { voice: cast.cloud(speaker), fallbackVoice: cast.local(speaker), rate }),
+    [cast, rate],
+  );
+
+  // Fetch all lines' audio up front so playback is instant (and cached for replays).
+  useEffect(() => {
+    void prefetch(d.lines.map((l) => ({ text: l.text, voice: cast.cloud(l.speaker) })));
+  }, [d.lines, cast]);
 
   async function playAll() {
     stopAll.current = false;
     for (let i = 0; i < d.lines.length; i++) {
       if (stopAll.current) break;
       setPlayingIdx(i);
-      await speak(d.lines[i].text, { rate, voice: voiceFor(d.lines[i].speaker) });
+      await play(d.lines[i].text, d.lines[i].speaker);
       await new Promise((r) => setTimeout(r, 250));
     }
     setPlayingIdx(null);
@@ -96,11 +105,11 @@ function ShadowingSession() {
 
   function stop() {
     stopAll.current = true;
-    stopSpeaking();
+    stopAudio();
     setPlayingIdx(null);
   }
 
-  useEffect(() => () => stopSpeaking(), []);
+  useEffect(() => () => stopAudio(), []);
 
   function finish() {
     update((s) => {
@@ -161,7 +170,7 @@ function ShadowingSession() {
                 onClick={() => {
                   stop();
                   setPlayingIdx(i);
-                  void speak(line.text, { rate, voice: voiceFor(line.speaker) }).then(() => setPlayingIdx(null));
+                  void play(line.text, line.speaker).then(() => setPlayingIdx(null));
                 }}
                 className={`block w-full rounded-xl p-2 text-left transition ${playingIdx === i ? 'bg-brand/10' : ''}`}
               >
@@ -190,8 +199,7 @@ function ShadowingSession() {
       {mode === 'shadow' && (
         <ShadowLines
           dialogue={d}
-          rate={rate}
-          voiceFor={voiceFor}
+          play={play}
           scores={day.lineScores}
           onScore={(i, ratio) =>
             update((s) => ({
@@ -234,13 +242,12 @@ function ShadowingSession() {
 
 function ShadowLines(props: {
   dialogue: Shadowing;
-  rate: number;
-  voiceFor: (speaker: string) => SpeechSynthesisVoice | null;
+  play: (text: string, speaker: string) => Promise<void>;
   scores: Record<number, number>;
   onScore: (i: number, ratio: number) => void;
   onDone: () => void;
 }) {
-  const { dialogue, rate, voiceFor, scores, onScore, onDone } = props;
+  const { dialogue, play, scores, onScore, onDone } = props;
   const firstUnattempted = dialogue.lines.findIndex((_, i) => scores[i] === undefined);
   const [idx, setIdx] = useState(firstUnattempted === -1 ? 0 : firstUnattempted);
   const [result, setResult] = useState<CompareResult | null>(null);
@@ -260,7 +267,7 @@ function ShadowLines(props: {
   }, [rec.listening, rec.finalText, line.text, idx, onScore]);
 
   function go(n: number) {
-    stopSpeaking();
+    stopAudio();
     rec.stop();
     setResult(null);
     rec.reset();
@@ -304,7 +311,7 @@ function ShadowLines(props: {
       </div>
 
       <div className="mt-5 flex items-center justify-center gap-6">
-        <button className="btn-secondary h-14 w-14 !rounded-full !p-0 text-xl" aria-label="Play line" onClick={() => speak(line.text, { rate, voice: voiceFor(line.speaker) })}>
+        <button className="btn-secondary h-14 w-14 !rounded-full !p-0 text-xl" aria-label="Play line" onClick={() => play(line.text, line.speaker)}>
           ▶
         </button>
         {rec.supported ? (
@@ -312,7 +319,7 @@ function ShadowLines(props: {
             size="lg"
             listening={rec.listening}
             onStart={() => {
-              stopSpeaking();
+              stopAudio();
               setResult(null);
               rec.start();
             }}
@@ -327,7 +334,7 @@ function ShadowLines(props: {
           title="Play, then record"
           onClick={async () => {
             setResult(null);
-            await speak(line.text, { rate, voice: voiceFor(line.speaker) });
+            await play(line.text, line.speaker);
             rec.start();
           }}
         >

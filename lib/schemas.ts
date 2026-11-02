@@ -46,6 +46,9 @@ export const ShadowingSchema = z.object({
   title: z.string(),
   setting: z.string().describe('One sentence describing where/who'),
   speakers: z.array(z.string()).min(2).max(3),
+  speakerVoices: z
+    .array(z.enum(['female', 'male']))
+    .describe('Voice type for each speaker, in the same order as speakers'),
   lines: z.array(DialogueLineSchema).min(8).max(20),
   phrases: z.array(PhraseSchema).min(4).max(8),
   listeningTip: z.string().describe('One American-English sound pattern to notice today'),
@@ -55,6 +58,11 @@ export type Shadowing = z.infer<typeof ShadowingSchema>;
 export const ShadowingRequestSchema = z.object({
   learner: LearnerContextSchema,
   recentTitles: z.array(z.string().max(120)).max(30),
+});
+
+export const TtsRequestSchema = z.object({
+  text: z.string().min(1).max(800),
+  voice: z.string().regex(/^en-US-Chirp3-HD-[A-Za-z]+$/),
 });
 
 // ---------------------------------------------------------------------------
@@ -204,7 +212,13 @@ export const RoleplayStartRequestSchema = z.object({
 export const RoleplayStartSchema = z.object({
   scene: z.string().describe('2 sentences setting the scene for the learner'),
   characters: z
-    .array(z.object({ name: z.string(), vibe: z.string().describe('3-6 words on personality') }))
+    .array(
+      z.object({
+        name: z.string(),
+        vibe: z.string().describe('3-6 words on personality'),
+        voice: z.enum(['female', 'male']).describe('Voice type for text-to-speech'),
+      }),
+    )
     .min(1)
     .max(3),
   opening: z.array(RoleplayMessageSchema).min(2).max(5),
@@ -215,7 +229,9 @@ export type RoleplayStart = z.infer<typeof RoleplayStartSchema>;
 export const RoleplayTurnRequestSchema = z.object({
   learner: LearnerContextSchema,
   scene: z.string().max(600),
-  characters: z.array(z.object({ name: z.string().max(40), vibe: z.string().max(80) })).max(3),
+  characters: z
+    .array(z.object({ name: z.string().max(40), vibe: z.string().max(80), voice: z.enum(['female', 'male']).optional() }))
+    .max(3),
   skillFocus: z.string().max(300),
   history: z.array(RoleplayMessageSchema).min(1).max(60),
 });

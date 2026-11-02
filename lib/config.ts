@@ -7,6 +7,15 @@ export const AI_CONFIG = {
   MAX_TOKENS: 16000,
 } as const;
 
+export const TTS_CONFIG = {
+  /** Google Cloud Chirp 3 HD voices (en-US). Speakers are cast by voice type, in order. */
+  VOICES: {
+    female: ['en-US-Chirp3-HD-Leda', 'en-US-Chirp3-HD-Aoede', 'en-US-Chirp3-HD-Zephyr'],
+    male: ['en-US-Chirp3-HD-Puck', 'en-US-Chirp3-HD-Fenrir', 'en-US-Chirp3-HD-Orus'],
+  },
+  MAX_CHARS: 800,
+} as const;
+
 export const LEARNING_CONFIG = {
   /** New phrases introduced in each daily shadowing dialogue. */
   PHRASES_PER_DIALOGUE: '5-7',
