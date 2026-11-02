@@ -43,3 +43,13 @@ describe('createRoute', () => {
     expect((await res.json()).error).toMatch(/ANTHROPIC_API_KEY/);
   });
 });
+
+describe('/api/auth/check', () => {
+  it('verifies the passcode without needing an API key', async () => {
+    const { POST: check } = await import('@/app/api/auth/check/route');
+    vi.stubEnv('APP_PASSCODE', 'secret');
+    vi.stubEnv('ANTHROPIC_API_KEY', '');
+    expect(check(req({}, { 'x-app-passcode': 'secret' })).status).toBe(200);
+    expect(check(req({}, { 'x-app-passcode': 'nope' })).status).toBe(401);
+  });
+});

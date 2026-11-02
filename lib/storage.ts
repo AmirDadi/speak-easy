@@ -59,6 +59,43 @@ export function getStateSnapshot(): AppState {
   return read();
 }
 
+export function setPasscode(passcode: string) {
+  const s = read();
+  write({ ...s, profile: { ...s.profile, passcode } });
+}
+
+// ---------------------------------------------------------------------------
+// Onboarding draft: kept separately so a failed request, reload or closed app
+// never loses what the user already typed or said during setup.
+// ---------------------------------------------------------------------------
+
+const DRAFT_KEY = 'speak-easy:onboarding-draft';
+
+export function loadDraft<T>(): T | null {
+  try {
+    const raw = window.localStorage.getItem(DRAFT_KEY);
+    return raw ? (JSON.parse(raw) as T) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveDraft(draft: unknown) {
+  try {
+    window.localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+  } catch {
+    // Best effort only.
+  }
+}
+
+export function clearDraft() {
+  try {
+    window.localStorage.removeItem(DRAFT_KEY);
+  } catch {
+    // Ignore.
+  }
+}
+
 export function exportBackup(): string {
   return JSON.stringify(read(), null, 2);
 }

@@ -1,16 +1,26 @@
 'use client';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ErrorBox, MicButton, PhraseCard, Spinner } from '@/components/ui';
-import { callApi } from '@/lib/api-client';
+import { callApi, checkPasscode, isPasscodeRequired } from '@/lib/api-client';
 import { getLocalDate } from '@/lib/dates';
 import { CHECKLIST_PHRASES, PLACEMENT_QUESTIONS } from '@/lib/onboarding-content';
 import type { Placement } from '@/lib/schemas';
 import { useSpeechRecognition } from '@/lib/speech';
 import { addPhrases, markActive } from '@/lib/state';
-import { useAppState } from '@/lib/storage';
+import { clearDraft, loadDraft, saveDraft, setPasscode, useAppState } from '@/lib/storage';
 
 type Step = 'about' | 'checklist' | 'writing' | 'result';
+
+interface Draft {
+  step: Step;
+  interests: string;
+  goals: string;
+  about: string;
+  known: string[];
+  answers: string[];
+  result: Placement | null;
+}
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -24,6 +34,52 @@ export default function OnboardingPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<Placement | null>(null);
+  const [state] = useAppState();
+  const [passcodeRequired, setPasscodeRequired] = useState(false);
+  const [passcode, setPasscodeInput] = useState('');
+  const [passcodeError, setPasscodeError] = useState<string | null>(null);
+  const [checking, setChecking] = useState(false);
+  const [draftLoaded, setDraftLoaded] = useState(false);
+
+  // Restore a saved draft after mount (not in useState initializers, so the
+  // first client render matches the pre-rendered HTML).
+  useEffect(() => {
+    const d = loadDraft<Draft>();
+    if (d) {
+      setStep(d.step);
+      setInterests(d.interests);
+      setGoals(d.goals);
+      setAbout(d.about);
+      setKnown(new Set(d.known));
+      if (d.answers.length === PLACEMENT_QUESTIONS.length) setAnswers(d.answers);
+      setResult(d.result);
+      if (d.step === 'result' && !d.result) setStep('writing');
+    }
+    setDraftLoaded(true);
+    void isPasscodeRequired().then(setPasscodeRequired);
+  }, []);
+
+  useEffect(() => {
+    if (!draftLoaded) return;
+    saveDraft({ step, interests, goals, about, known: [...known], answers, result } satisfies Draft);
+  }, [draftLoaded, step, interests, goals, about, known, answers, result]);
+
+  const needsPasscode = passcodeRequired && !state.profile.passcode;
+
+  async function next() {
+    if (needsPasscode) {
+      setChecking(true);
+      setPasscodeError(null);
+      const ok = await checkPasscode(passcode.trim());
+      setChecking(false);
+      if (!ok) {
+        setPasscodeError("That passcode didn't work. It's the APP_PASSCODE set in Vercel.");
+        return;
+      }
+      setPasscode(passcode.trim());
+    }
+    setStep('checklist');
+  }
 
   async function submit() {
     setLoading(true);
@@ -62,6 +118,7 @@ export default function OnboardingPage() {
         today,
       ),
     );
+    clearDraft();
     router.replace('/');
   }
 
@@ -92,8 +149,22 @@ export default function OnboardingPage() {
               onChange={(e) => setAbout(e.target.value)}
             />
           </label>
-          <button className="btn-primary w-full" onClick={() => setStep('checklist')}>
-            Next
+          {needsPasscode && (
+            <label className="block">
+              <span className="label">App passcode</span>
+              <input
+                className="input mt-1"
+                type="password"
+                autoComplete="current-password"
+                placeholder="The passcode you were given"
+                value={passcode}
+                onChange={(e) => setPasscodeInput(e.target.value)}
+              />
+              {passcodeError && <p className="mt-1 text-sm text-bad">{passcodeError}</p>}
+            </label>
+          )}
+          <button className="btn-primary w-full" disabled={checking || (needsPasscode && !passcode.trim())} onClick={next}>
+            {checking ? 'Checking…' : 'Next'}
           </button>
         </div>
       )}

@@ -7,7 +7,7 @@ import { NextResponse } from 'next/server';
 import type { z } from 'zod';
 import { AiError } from './claude';
 
-function passcodeOk(req: Request): boolean {
+export function passcodeOk(req: Request): boolean {
   const expected = process.env.APP_PASSCODE;
   if (!expected) return true;
   const given = req.headers.get('x-app-passcode') ?? '';
